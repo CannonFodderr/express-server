@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+      "target": "es2017",
+      "lib": ["es2017","DOM"],
+      "module": "commonjs",
+      "rootDir": "src",
+      "outDir": "dist",
+      "allowJs": false,
+      "sourceMap": true,
+      "noEmitOnError": true,
+      "noUnusedLocals": false,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "noImplicitReturns": true,
+      "preserveConstEnums": true,
+      "forceConsistentCasingInFileNames": true,
+      "typeRoots": ["src/typings/global.d.ts"],
+      "esModuleInterop": true
+    },
+    "include": [
+      "src/**/*.ts"
+    ]
+  }
