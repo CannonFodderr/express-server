@@ -2,13 +2,13 @@ import { Router } from "express";
 import { createLogger } from "../utils/logger.util";
 const logger = createLogger('health-controller')
 export class HealthController {
-    constructor(app: Router, baseGateway: string) {
+    constructor(app: Router, baseRoute: string = '') {
         const healthRouter = Router();
 
         this.getHealth(healthRouter);
 
-        app.use(`${baseGateway}/public/health`, healthRouter);
-        logger.info(`Mounted Health Controller @ ${baseGateway}/public/health`);
+        app.use(`${baseRoute}/public/health`, healthRouter);
+        logger.info(`Mounted Health Controller @ ${baseRoute}/public/health`);
     }
 
     getHealth(router: Router) {

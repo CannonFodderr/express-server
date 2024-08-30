@@ -4,7 +4,8 @@ import { createLogger } from "./utils/logger.util"
 import { resolve, join } from "path"
 
 let loader: ConfigurationLoader
-const REQUIRED_CONFIGURATIONS = {
+// These will optionally load from a .env file
+const SUPPORTED_CONFIGURATIONS = {
     ENV: 'string',
     SERVER_PORT: 'number',
     SERVER_TEST_PORT: 'number',
@@ -16,7 +17,12 @@ const logger = createLogger('config-loader')
 class ConfigurationLoader {
     #config: ProcessConfig
     constructor () {
-        this.#config = {}
+        this.#config = {
+            ENV: "development",
+            SERVER_PORT: 5000,
+            SERVER_TEST_PORT: 5001,
+            LOG_LEVEL: "info"
+        }
         this.load()
     }
     private load (): ProcessConfig {
@@ -27,7 +33,7 @@ class ConfigurationLoader {
             return process.exit(0)
         }
         logger.debug(`Loaded validated configuration`)
-        return localEnv
+        return this.#config
     }
     private loadJSONFile (path: string) {
         const fullPath = resolve(join(process.cwd(), path))
@@ -68,13 +74,13 @@ class ConfigurationLoader {
     }
     private validateLoadedConfig (config: {[key: string]: any }): boolean {
         let isValid = true
-        for (const key in REQUIRED_CONFIGURATIONS) {
+        for (const key in SUPPORTED_CONFIGURATIONS) {
             const value = config[key]
             if(!value && !isNaN(value)) {
                 isValid = false
                 logger.error(`Missing required env variable`)
             }
-            const keyType = REQUIRED_CONFIGURATIONS[key as keyof typeof REQUIRED_CONFIGURATIONS]
+            const keyType = SUPPORTED_CONFIGURATIONS[key as keyof typeof SUPPORTED_CONFIGURATIONS]
             const parsedValue = this.parseKeyValue(key, value, keyType)
 
             if(parsedValue === undefined) {

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import { ProcessConfig } from './types/config.type';
 import createHealthController from './controllers/health.controller';
 import createNotFoundController from './controllers/notFound.controller';
-import { createLogger } from './utils/logger.util';
+import { createLogger, logTracingMiddleware } from './utils/logger.util';
 import { ipBlockerCleanup, stopIpBlockerCleanup } from './utils/ratelimit-timeout.util';
 import { Server } from 'http';
 import cookieParser from 'cookie-parser'
@@ -29,7 +29,7 @@ export class AppServer {
             this.app.use(helmet());
             this.app.use(cookieParser())
             this.app.disable('x-powered-by');
-
+            this.app.use(logTracingMiddleware)
             return true
         } catch (error) {
             logger.error(`Error initializing server: ${error}`)

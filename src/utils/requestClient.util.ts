@@ -1,5 +1,5 @@
 import axios, { Axios, AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
-import { createLogger } from './logger.util';
+import { createLogger, X_APP_TRACE_HEADER } from './logger.util';
 import { join } from 'node:path';
 const logger = createLogger('request-service')
 export class RequestClient {
@@ -45,7 +45,8 @@ export class RequestClient {
 
 export function createSystemRequestClient(host: string, secret: string) {
     logger.debug(`Creating system request client: ${host}`)
-    return new RequestClient({ baseURL: `${host}/iam/system/auth`, headers: { 'x-jeen-auth-service': secret }})
+    const tracingHeader = process.env.X_APP_TRACE_HEADER || X_APP_TRACE_HEADER
+    return new RequestClient({ baseURL: `${host}/iam/system/auth`, headers: { tracingHeader: secret }})
 }
 
 export default function createRequestClient(defaults: CreateAxiosDefaults = {}) {
