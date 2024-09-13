@@ -40,6 +40,7 @@ export class AppServer {
         try {
             createHealthController(this.app, BASE_API)
             createNotFoundController(this.app)
+            logger.debug(`Server controllers mounted`)
             return true
         } catch (error) {
             logger.error(`Error mounting server controllers`)
