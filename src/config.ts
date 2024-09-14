@@ -10,6 +10,7 @@ const SUPPORTED_CONFIGURATIONS = {
     SERVER_PORT: 'number',
     SERVER_TEST_PORT: 'number',
     LOG_LEVEL: 'string',
+    CLUSTER_CPUS: 'number'
 }
 
 const logger = createLogger('config-loader')
@@ -33,6 +34,7 @@ class ConfigurationLoader {
             return process.exit(0)
         }
         logger.debug(`Loaded validated configuration`)
+        logger.debug(this.#config)
         return this.#config
     }
     private loadJSONFile (path: string) {

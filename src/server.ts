@@ -8,7 +8,9 @@ import { createLogger, logTracingMiddleware } from './utils/logger.util';
 import { ipBlockerCleanup, stopIpBlockerCleanup } from './utils/ratelimit-timeout.util';
 import { Server } from 'http';
 import cookieParser from 'cookie-parser'
-import createAuthorityService from './services/auth.service';
+import createAuthorityService, { AuthorityService } from './services/auth.service';
+import { Services } from './types/services.type';
+import errorHandler from './middlewares/error.middleware';
 
 const logger = createLogger('server')
 export const BASE_API = '/api/v1'
@@ -17,9 +19,13 @@ export class AppServer {
     private config: ProcessConfig
     private app: express.Application
     private server: Server
+    private services: Services
     constructor(config: ProcessConfig) {
         this.config = config
         this.app = express()
+        this.services = {
+            authService: createAuthorityService()
+        }
     }
     getApp() {
         return this.app
@@ -42,17 +48,17 @@ export class AppServer {
             createHealthController(this.app, BASE_API)
             createNotFoundController(this.app)
             logger.debug(`Server controllers mounted`)
+            // Mount error handler middleware catch controller errors and pass to next(err) function
+            this.app.use(errorHandler)
             return true
         } catch (error) {
             logger.error(`Error mounting server controllers`)
             return false
         }
     }
-
     async initializeServices() {
         try {
-            const authService = createAuthorityService()
-            const configured = await authService.rotateConfiguration()
+            const configured = await this.services.authService.rotateConfiguration()
             if (!configured) {
                 throw new Error('Error initializing authority service')
             }
