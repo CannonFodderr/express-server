@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --env-file .env --test dist/test",
+    "test:authService": "node --env-file .env --test dist/test/services/auth.service.test.js",
     "start": "node --env-file .env ./dist/index.js"
   },
   "author": "",

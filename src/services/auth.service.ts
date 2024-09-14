@@ -1,24 +1,30 @@
-import {decodeProtectedHeader, EncryptJWT, generateKeyPair, jwtDecrypt, JWTPayload, jwtVerify, JWTVerifyOptions, KeyLike, SignJWT } from "jose"
+import {decodeJwt, decodeProtectedHeader, EncryptJWT, generateKeyPair, jwtDecrypt, JWTPayload, jwtVerify, JWTVerifyOptions, KeyLike, SignJWT } from "jose"
 import { createLogger } from "../utils/logger.util"
 import { generateRandomBytesHex } from "../utils/crypto.util"
-import { JWTEncryptionOptions } from "../types/jwt.types"
+import { JwtConfiguration, JWTEncryptionOptions, SubscriberEntityType } from "../types/jwt.types"
 
 let authServiceInstance: AuthorityService | null = null
 const logger = createLogger('auth-service')
 const defaultJwtExpiration = '5m'
 
-class AuthorityService {
+
+function getDefaultJwtConfiguration(): JwtConfiguration {
+    return {
+        issuer: `api:${generateRandomBytesHex(16)}:issuer`,
+        kid: generateRandomBytesHex(16),
+        alg: 'RS256'
+    }
+}
+export class AuthorityService {
     private privateKey: KeyLike
     private publicKey: KeyLike
-    private issuer: string
-    private kid: string
-    constructor(issuer: string = generateRandomBytesHex(32), kid: string = generateRandomBytesHex(24)) {
+    private jwtConfig: JwtConfiguration
+    constructor(jwtConfig: JwtConfiguration = getDefaultJwtConfiguration()) {
         this.privateKey
         this.publicKey
-        this.issuer = issuer
-        this.initialize()
+        this.jwtConfig = jwtConfig
     }
-    private async initialize() {
+    async createOrRefreshKeys() {
         try {
             const { privateKey, publicKey } = await this.generateKeyPair()
             this.privateKey = privateKey
@@ -28,6 +34,10 @@ class AuthorityService {
             logger.error(`Error initializing authority service: ${error}`)
             return false
         }
+    }
+    async rotateConfiguration(jwtConfig?: JwtConfiguration) {
+        this.jwtConfig = jwtConfig || getDefaultJwtConfiguration()
+        return await this.createOrRefreshKeys()
     }
     async generateKeyPair() {
         return await generateKeyPair('RS256')
@@ -43,9 +53,18 @@ class AuthorityService {
             return null
         }
     }
-    decryptToken(token: string) {
+    encryptToken(payload: JWTPayload) {
         try {
-            return jwtDecrypt(token, this.privateKey)
+            return new EncryptJWT(payload)
+        } catch (error) {
+            logger.error(`Error encrypting token: ${error}`)
+            return null
+        }
+    }
+    async decodeJWT(token: string) {
+        try {
+            const jwtData = await decodeJwt(token)
+            return jwtData
         } catch (error) {
             logger.error(`Error decrypting token: ${error}`)
             return null
@@ -53,8 +72,8 @@ class AuthorityService {
     }
     async verifyToken(token: string, options?: JWTVerifyOptions) {
         const verifyOptions: JWTVerifyOptions = {
-            algorithms: ['RS256'],
-            issuer: this.issuer,
+            algorithms: [this.jwtConfig.alg],
+            issuer: this.jwtConfig.issuer,
             audience: options?.audience,
             ...options
         }
@@ -64,11 +83,23 @@ class AuthorityService {
                 return null
             }
             const { kid } = decodedHeader
-            if (kid !== this.kid) {
+            if (kid !== this.jwtConfig.kid) {
                 logger.error(`Invalid key id: ${kid}`)
                 return null
             }
             const verifiedData = await jwtVerify(token, this.publicKey, verifyOptions)
+            if(!verifiedData) {
+                logger.error(`Invalid token: ${JSON.stringify(verifiedData)}`)
+                return null
+            }
+            const { iat } = verifiedData.payload
+            console.log({ iat, now: new Date().getTime() })
+
+            if(iat && iat > new Date().getTime()) {
+                logger.error(`Token issued in the future: ${JSON.stringify(verifiedData)}`)
+                return null
+            }
+
             logger.debug(`Token verified: ${JSON.stringify(verifiedData)}`)
             return verifiedData
         } catch (error) {
@@ -76,22 +107,18 @@ class AuthorityService {
             return null
         }
     }
-    async generateUnsignedJWT(payload: JWTPayload, options: JWTEncryptionOptions = { expiresIn: defaultJwtExpiration, audience: 'any' }) {
-        const jwt = await new EncryptJWT(payload)
-        .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', cty: 'JWT', kid: this.kid })
-        .setIssuedAt()
-        .setIssuer(this.issuer)
-        .setAudience(options.audience || 'any')
-        .setExpirationTime(options.expiresIn)
-        .encrypt(this.privateKey)
 
-        return jwt
-    }
-    async generateJWT(payload: JWTPayload, options: JWTEncryptionOptions = { expiresIn: defaultJwtExpiration, audience: 'any' }) {
+    async generateJWT(payload: JWTPayload, userOptions?: JWTEncryptionOptions) {
+        const defaultOptions = {
+            expiresIn: defaultJwtExpiration,
+            audience: SubscriberEntityType.CLIENT,
+            issuedAt: new Date().getTime()
+        }
+        const options = { ...defaultOptions, ...userOptions }
         const jwt = await new SignJWT(payload)
-        .setProtectedHeader({ alg: 'RS256', kid: this.kid })
-        .setIssuedAt()
-        .setIssuer(this.issuer)
+        .setProtectedHeader({ alg: 'RS256', kid: this.jwtConfig.kid })
+        .setIssuedAt(options.issuedAt)
+        .setIssuer(this.jwtConfig.issuer)
         .setAudience(options.audience || 'any')
         .setExpirationTime(options.expiresIn)
         .sign(this.privateKey)
