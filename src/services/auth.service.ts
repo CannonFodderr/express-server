@@ -19,16 +19,20 @@ export class AuthorityService {
     private privateKey: KeyLike
     private publicKey: KeyLike
     private jwtConfig: JwtConfiguration
-    constructor(jwtConfig: JwtConfiguration = getDefaultJwtConfiguration()) {
+    constructor(jwtConfig?: JwtConfiguration) {
+        const defaultConfig = getDefaultJwtConfiguration()
+        const config = { ...defaultConfig, ...jwtConfig }
+
         this.privateKey
         this.publicKey
-        this.jwtConfig = jwtConfig
+        this.jwtConfig = config
     }
     async createOrRefreshKeys() {
         try {
             const { privateKey, publicKey } = await this.generateKeyPair()
             this.privateKey = privateKey
             this.publicKey = publicKey
+
             return true
         } catch (error) {
             logger.error(`Error initializing authority service: ${error}`)
@@ -36,7 +40,10 @@ export class AuthorityService {
         }
     }
     async rotateConfiguration(jwtConfig?: JwtConfiguration) {
-        this.jwtConfig = jwtConfig || getDefaultJwtConfiguration()
+        const defaultConfig = getDefaultJwtConfiguration()
+        const config = { ...defaultConfig, ...jwtConfig }
+        logger.debug(`Rotating configuration: ${JSON.stringify(config)}`)
+        this.jwtConfig = config
         return await this.createOrRefreshKeys()
     }
     async generateKeyPair() {
@@ -71,8 +78,9 @@ export class AuthorityService {
         }
     }
     async verifyToken(token: string, options?: JWTVerifyOptions) {
+        const alg = this.jwtConfig.alg || 'RS256'
         const verifyOptions: JWTVerifyOptions = {
-            algorithms: [this.jwtConfig.alg],
+            algorithms: [alg],
             issuer: this.jwtConfig.issuer,
             audience: options?.audience,
             ...options

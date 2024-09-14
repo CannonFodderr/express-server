@@ -8,6 +8,7 @@ import { createLogger, logTracingMiddleware } from './utils/logger.util';
 import { ipBlockerCleanup, stopIpBlockerCleanup } from './utils/ratelimit-timeout.util';
 import { Server } from 'http';
 import cookieParser from 'cookie-parser'
+import createAuthorityService from './services/auth.service';
 
 const logger = createLogger('server')
 export const BASE_API = '/api/v1'
@@ -50,8 +51,14 @@ export class AppServer {
 
     async initializeServices() {
         try {
+            const authService = createAuthorityService()
+            const configured = await authService.rotateConfiguration()
+            if (!configured) {
+                throw new Error('Error initializing authority service')
+            }
             return true
         } catch (error) {
+            logger.error(`Error initializing services: ${error}`)
             return false
         }
     }
