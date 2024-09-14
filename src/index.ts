@@ -8,8 +8,6 @@ const logger = createLogger('index')
 const envCpus = Number(process.env.CLUSTER_CPUS)
 const numCPUs = envCpus && envCpus < os.cpus().length ? envCpus : os.cpus().length
 
-
-
 class AppWorker {
     constructor() {
         this.init()
