@@ -3,26 +3,29 @@ FROM node:20.14.0 AS builder
 
 WORKDIR /app
 
-COPY package.json ./
-COPY provider.json ./
-RUN yarn global add typescript
-RUN yarn install --frozen-lockfile
+COPY package.json yarn.lock ./
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN yarn global add typescript \
+    && yarn add --frozen-lockfile \
+    rm -rf /tmp/*
 
 COPY . .
 
 RUN yarn build
 
 # Stage 2: Create production image
-FROM node:20.14.0-alpine
+FROM node:20.14.0-alpine AS production
 
 WORKDIR /app
 
 COPY package.json ./
-RUN yarn install --production --frozen-lockfile
-
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/provider.json ./provider.json
+COPY --from=builder /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["entrypoint.sh"]

@@ -10,8 +10,7 @@ let rateLimiterInterval: NodeJS.Timeout;
 
 export function ipBlockerCleanup(interval: number = 60 * 1000) {
     rateLimiterInterval = setInterval(() => {
-        logger.debug("Clearing request counts");
-        const currentTime = new Date().getTime();
+        const currentTime = new Date().getTime()
         for (const ip in requestCounts) {
             const lastRequestTime = requestCounts[ip] || 0;
             if (currentTime - lastRequestTime > 60 * 1000) {
@@ -55,7 +54,7 @@ export function rateLimitAndTimeout (req: Request, res: Response, next: NextFunc
       res.status(504).json({
         code: 504,
         status: "Error",
-        message: "Gateway timeout.",
+        message: "App timeout.",
         data: null,
       });
     });

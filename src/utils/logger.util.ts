@@ -26,7 +26,7 @@ if (process.env.ENV === 'development') {
     }
 }
 
-const logger = pino(loggerOptions).child({ 'env': process.env.ENV, 'version': version })
+const logger = pino(loggerOptions)
 const logLevel = process.env.LOG_LEVEL?.toLowerCase()
 if (logLevel === "debug") {
     logger.level = logLevel || 'info'

@@ -8,9 +8,9 @@ import { createLogger, logTracingMiddleware } from './utils/logger.util';
 import { ipBlockerCleanup, stopIpBlockerCleanup } from './utils/ratelimit-timeout.util';
 import { Server } from 'http';
 import cookieParser from 'cookie-parser'
-import createAuthorityService, { AuthorityService } from './services/auth.service';
+import createAuthorityService from './services/auth.service';
 import { Services } from './types/services.type';
-import errorHandler from './middlewares/error.middleware';
+import errorMiddleware from './middlewares/error.middleware';
 
 const logger = createLogger('server')
 export const BASE_API = '/api/v1'
@@ -49,7 +49,7 @@ export class AppServer {
             createNotFoundController(this.app)
             logger.debug(`Server controllers mounted`)
             // Mount error handler middleware catch controller errors and pass to next(err) function
-            this.app.use(errorHandler)
+            this.app.use(errorMiddleware)
             return true
         } catch (error) {
             logger.error(`Error mounting server controllers`)

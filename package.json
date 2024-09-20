@@ -1,11 +1,14 @@
 {
   "name": "server",
-  "version": "1.0.0",
+  "version": "20092401",
   "main": "index.js",
   "scripts": {
     "test": "node --env-file .env --test dist/test",
+    "test:config": "node --env-file .env --test dist/test/config.test.js",
     "test:authService": "node --env-file .env --test dist/test/services/auth.service.test.js",
-    "start": "node --env-file .env ./dist/index.js"
+    "start": "node --env-file .env ./dist/index.js",
+    "clean": "rm -rf dist",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +19,7 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
+    "http-proxy-middleware": "^3.0.2",
     "jose": "^5.9.1",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.2"
