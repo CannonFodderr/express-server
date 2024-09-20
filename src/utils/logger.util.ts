@@ -5,14 +5,13 @@ import { randomUUID } from 'crypto'
 
 export const X_APP_TRACE_HEADER = 'x-app-trace-id'
 
-const version = require('../../package.json').version
 const TRACING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
 
 const loggerOptions: LoggerOptions = {
     timestamp: () => pino.stdTimeFunctions.isoTime(),
     mixin() {
         return {
-            TRACE_HEADER: context.getStore()?.get(X_APP_TRACE_HEADER),
+            X_APP_TRACE_HEADER: context.getStore()?.get(X_APP_TRACE_HEADER),
         }
     },
 }

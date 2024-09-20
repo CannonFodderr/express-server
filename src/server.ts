@@ -11,7 +11,8 @@ import cookieParser from 'cookie-parser'
 import createAuthorityService from './services/auth.service';
 import { Services } from './types/services.type';
 import errorMiddleware from './middlewares/error.middleware';
-
+import createProxyController from './controllers/proxy.controller';
+const version = require('../package.json').version
 const logger = createLogger('server')
 export const BASE_API = '/api/v1'
 
@@ -46,6 +47,7 @@ export class AppServer {
     mountControllers() {
         try {
             createHealthController(this.app, BASE_API)
+            createProxyController(this.app, this.config.PROXY_SERVICE_TARGETS)
             createNotFoundController(this.app)
             logger.debug(`Server controllers mounted`)
             // Mount error handler middleware catch controller errors and pass to next(err) function
@@ -72,7 +74,7 @@ export class AppServer {
         try {
             ipBlockerCleanup()
             this.server = this.app.listen(port, () => {
-                logger.info(`${name} serving on port ${port || this.config.SERVER_PORT}`)
+                logger.info(`${name} version: ${version} serving on port ${port || this.config.SERVER_PORT}`)
             })
         } catch (error) {
             logger.fatal(error)
